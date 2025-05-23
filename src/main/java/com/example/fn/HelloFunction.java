@@ -11,6 +11,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,14 +21,14 @@ public class HelloFunction {
 
     @FnConfiguration
     public void setUp(RuntimeContext ctx) throws Exception {
-        authConfig = ctx.getConfigurationByKey("CONFIG").orElse(System.getenv().getOrDefault("CONFIG", ""));
+        authConfig = ctx.getConfigurationByKey("config").orElse(System.getenv().getOrDefault("config", ""));
     }
 
     public String handleRequest(final HTTPGatewayContext hctx, final InputEvent input) {
 
         String ret = "";
         String body = "";
-        String auth_basic = "";
+        String username = "";
 
         boolean LOCAL = false;
         boolean FOUND = false;
@@ -44,7 +45,7 @@ public class HelloFunction {
         System.out.println("======= CONFIG ======");
         //hctx.getHeaders().getAll().forEach((key, value) -> System.out.println(">>>>>" + key + ": " + value));
         //input.getHeaders().getAll().forEach((key, value) -> System.out.println(">>>>>" + key + ": " + value));
-        //System.out.println("AUTH: " + authConfig);
+        System.out.println("AUTH: " + authConfig);
         System.out.println("=====================");
 
         String url = input.getHeaders().get("Fn-Http-Request-Url").orElse("");
@@ -74,13 +75,15 @@ public class HelloFunction {
             List<String> tokenizedBody = Arrays.stream(bodyTokens).map(String::trim).collect(Collectors.toList());
 
             for (String configToken : tokenizedConfig) {
-                // Iterate thru tokenizedBody//[Code-Assist (12)]
                 for (String token : tokenizedBody) {
                     if (token.indexOf("Basic ") > -1 && configToken.length() > 0) {
                         String auth_token = token.substring(token.indexOf("Basic ") + 6, token.indexOf("\"}"));
                         if (auth_token.equals(configToken)) {
                             System.out.println("AUTH SUCCESS " + auth_token + " == " + configToken);
-                            auth_basic = token.substring(token.indexOf("Basic "), token.indexOf("\"}"));
+                            byte[] decodedBytes = Base64.getDecoder().decode(auth_token);
+                            String decodedString = new String(decodedBytes);
+                            String[] decodedTokens = decodedString.split(":");
+                            username = decodedTokens[0];
                             FOUND = true;
                         } else {
                             System.out.println("AUTH NO MATCH " + auth_token + " <> " + configToken);
@@ -98,8 +101,6 @@ public class HelloFunction {
                 hctx.setResponseHeader("WWW-Authenticate","Basic realm=\"fnsimplejava.com\"");
                 hctx.setStatusCode(401);
                 ret = "auth failed";
-                //hctx.setResponseHeader("Location","http://example.com");
-                //hctx.setStatusCode(302);
             }
         } else {
             if(FOUND) {
@@ -107,9 +108,8 @@ public class HelloFunction {
                         "\"active\": true," +
                         "\"principal\": \"myprincipal\"," +
                         "\"scope\": [\"fnsimplejava\"]," +
-                        "\"callId\": \"" + input.getCallID() + "\"," +
                         "\"expiresAt\": \"2025-12-31T00:00:00+00:00\"," +
-                        "\"context\": { \"Authorization\": \"" + auth_basic + "\" }" +
+                        "\"context\": { \"username\": \"" + username + "\" }" +
                         " }";
             } else {
                 ret = "{ " +
