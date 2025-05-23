@@ -69,7 +69,6 @@ public class HelloFunction {
         String[] configTokens = authConfig.split(",");
         List<String> tokenizedConfig = Arrays.stream(configTokens).map(String::trim).collect(Collectors.toList());
 
-        // Tokenize body//[Code-Assist (3)]
         if(body.length() > 0) {
             String[] bodyTokens = body.split(",");
             List<String> tokenizedBody = Arrays.stream(bodyTokens).map(String::trim).collect(Collectors.toList());
@@ -103,6 +102,9 @@ public class HelloFunction {
                 ret = "auth failed";
             }
         } else {
+            // Use header transformation in APIGW Route to get username in headers from this response
+            // in the target function:
+            // Overwrite	username     ${request.auth[username]}
             if(FOUND) {
                 ret = "{ " +
                         "\"active\": true," +
@@ -118,7 +120,6 @@ public class HelloFunction {
                         " }";
             }
         }
-
         System.out.println(ret);
         return ret;
     }
