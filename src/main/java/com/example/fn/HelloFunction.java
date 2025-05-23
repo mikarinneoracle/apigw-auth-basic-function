@@ -95,7 +95,7 @@ public class HelloFunction {
         if(LOCAL) {
             if(FOUND)
             {
-                ret = "auth success";
+                ret = "Username: " + username;
             }  else {
                 hctx.setResponseHeader("WWW-Authenticate","Basic realm=\"fnsimplejava.com\"");
                 hctx.setStatusCode(401);
