@@ -10,6 +10,8 @@ import com.fnproject.fn.api.httpgateway.HTTPGatewayContext;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -106,11 +108,14 @@ public class HelloFunction {
             // in the target function:
             // Overwrite	username     ${request.auth[username]}
             if(FOUND) {
+                LocalDateTime dateTime = LocalDateTime.now().plusDays(1);
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'+00:00'");
+                String expiryDate = dateTime.format(formatter);
                 ret = "{ " +
                         "\"active\": true," +
                         "\"principal\": \"myprincipal\"," +
                         "\"scope\": [\"fnsimplejava\"]," +
-                        "\"expiresAt\": \"2025-12-31T00:00:00+00:00\"," +
+                        "\"expiresAt\": \"" + expiryDate + "\"," +
                         "\"context\": { \"username\": \"" + username + "\" }" +
                         " }";
             } else {
